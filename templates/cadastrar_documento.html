@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+
+{% block title %}Cadastrar Modelo{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Cadastrar Novo Modelo</h5>
+                    
+                    <form id="formCadastroModelo" class="mt-4">
+                        <div class="mb-3">
+                            <label for="nome_modelo" class="form-label">Nome do Modelo*</label>
+                            <input type="text" class="form-control" id="nome_modelo" name="nome_modelo" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="titulo_documento" class="form-label">Título do Documento*</label>
+                            <input type="text" class="form-control" id="titulo_documento" name="titulo_documento" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="tipo_termo" class="form-label">Tipo do Termo*</label>
+                            <select class="form-select" id="tipo_termo" name="tipo_termo" required>
+                                <option value="">Selecione...</option>
+                                <option value="entrega">Termo de Entrega</option>
+                                <option value="devolucao">Termo de Devolução</option>
+                                <option value="emprestimo">Termo de Empréstimo</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="arquivo_rtf" class="form-label">Arquivo RTF*</label>
+                            <input type="file" class="form-control" id="arquivo_rtf" name="arquivo_rtf" accept=".rtf" required>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">Cadastrar Modelo</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Instruções</h5>
+                    <p>Para criar um novo modelo:</p>
+                    <ol>
+                        <li>Dê um nome descritivo ao modelo</li>
+                        <li>Defina o título que aparecerá no documento</li>
+                        <li>Selecione o tipo do termo</li>
+                        <li>Faça upload do arquivo RTF base</li>
+                    </ol>
+                    <div class="alert alert-info">
+                        <strong>Dica:</strong> Use as variáveis no formato {{nome_variavel}} no arquivo RTF.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Lista de Modelos -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-files"></i>
+                        Modelos Cadastrados
+                    </h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nome do Modelo</th>
+                                    <th>Título do Documento</th>
+                                    <th>Tipo de Termo</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="modelosTableBody">
+                                <!-- Os modelos serão carregados aqui via JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="loader-container">
+    <div class="d-flex flex-column align-items-center">
+        <div class="loader"></div>
+        <div class="loader-message">Processando...</div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Função para formatar o tipo de termo
+function formatarTipoTermo(tipo) {
+    const tipos = {
+        'entrega': 'Entrega',
+        'devolucao': 'Devolução',
+        'emprestimo': 'Empréstimo'
+    };
+    return tipos[tipo] || tipo;
+}
+
+// Função para carregar os modelos
+async function carregarModelos() {
+    try {
+        console.log("Iniciando carregamento de modelos...");
+        const response = await fetch('/api/modelos');
+        console.log("Resposta recebida:", response);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log("Dados recebidos:", data);
+        
+        // Atualizar a tabela com os dados
+        const tbody = document.getElementById('modelosTableBody');
+        tbody.innerHTML = '';
+        
+        if (data.modelos && data.modelos.length > 0) {
+            data.modelos.forEach(modelo => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${modelo.nome_modelo || ''}</td>
+                    <td>${modelo.titulo_documento || ''}</td>
+                    <td>${formatarTipoTermo(modelo.tipo_termo) || 'N/A'}</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm" onclick="excluirModelo('${modelo._id}')">
+                            <i class="bi bi-trash"></i>
+                            Excluir
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } else {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center">Nenhum modelo cadastrado</td></tr>';
+        }
+    } catch (error) {
+        console.error("Erro ao carregar modelos:", error);
+        const tbody = document.getElementById('modelosTableBody');
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Erro ao carregar modelos</td></tr>';
+    }
+}
+
+// Função para excluir um modelo
+async function excluirModelo(id) {
+    try {
+        const result = await Swal.fire({
+            title: 'Confirmar exclusão',
+            text: 'Tem certeza que deseja excluir este modelo?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sim, excluir',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d'
+        });
+
+        if (result.isConfirmed) {
+            const response = await fetch(`/api/excluir-modelo/${id}`, {
+                method: 'DELETE'
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                await Swal.fire({
+                    title: 'Sucesso!',
+                    text: 'Modelo excluído com sucesso!',
+                    icon: 'success',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#28a745'
+                });
+                carregarModelos(); // Recarrega a lista
+            } else {
+                throw new Error(data.message || 'Erro ao excluir modelo');
+            }
+        }
+    } catch (error) {
+        console.error('Erro ao excluir modelo:', error);
+        await Swal.fire({
+            title: 'Erro!',
+            text: 'Erro ao excluir modelo: ' + error.message,
+            icon: 'error',
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#dc3545'
+        });
+    }
+}
+
+// Carregar modelos quando a página carregar
+document.addEventListener('DOMContentLoaded', function() {
+    carregarModelos();
+    
+    const form = document.getElementById('formCadastroModelo');
+    const loaderContainer = document.querySelector('.loader-container');
+    const loaderMessage = document.querySelector('.loader-message');
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        try {
+            // Mostrar loader
+            loaderMessage.textContent = 'Processando arquivo e cadastrando modelo...';
+            loaderContainer.style.display = 'flex';
+            
+            const formData = new FormData(this);
+            const response = await fetch('/api/cadastrar-modelo', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            
+            // Esconder loader
+            loaderContainer.style.display = 'none';
+            
+            if (data.success) {
+                await Swal.fire({
+                    title: 'Sucesso!',
+                    text: 'Modelo cadastrado com sucesso!',
+                    icon: 'success',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#28a745'
+                });
+                carregarModelos(); // Recarrega a lista
+                this.reset(); // Limpa o formulário
+            } else {
+                throw new Error(data.message || 'Erro ao cadastrar modelo');
+            }
+        } catch (error) {
+            loaderContainer.style.display = 'none';
+            await Swal.fire({
+                title: 'Erro!',
+                text: 'Erro ao cadastrar modelo: ' + error.message,
+                icon: 'error',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#dc3545'
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

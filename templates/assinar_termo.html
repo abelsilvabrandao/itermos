@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assinar Termo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2196F3;
+            --secondary-color: #f8f9fa;
+            --border-color: #e0e0e0;
+            --text-color: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text-color);
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            border: none;
+        }
+
+        .card-header {
+            background: white;
+            border-bottom: 1px solid var(--border-color);
+            padding: 15px 20px;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .pdf-container {
+            position: relative;
+            width: 100%;
+            height: 800px;
+            overflow: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 20px;
+            background: white;
+        }
+
+        #pdf-canvas {
+            display: block;
+            margin: 0 auto;
+        }
+
+        .signature-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .signature-container {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .signature-pad-container {
+            flex: 1;
+        }
+
+        .qr-code-container {
+            width: 200px;
+            text-align: center;
+            padding: 15px;
+            background: var(--secondary-color);
+            border-radius: 8px;
+        }
+
+        #signature-pad {
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background-color: #fff;
+            margin-bottom: 15px;
+            width: 100%;
+            height: 200px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background-color: #1976D2;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background-color: #e0e0e0;
+            border: none;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background-color: #d0d0d0;
+        }
+
+        .btn-success {
+            background-color: #4CAF50;
+            border: none;
+        }
+
+        .btn-success:hover {
+            background-color: #43A047;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: none;
+        }
+
+        .instructions {
+            background-color: var(--secondary-color);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .instructions h5 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        .instructions ol {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+
+        .signature-preview {
+            position: absolute;
+            cursor: move;
+            z-index: 1000;
+            max-width: 300px;
+            max-height: 150px;
+            pointer-events: auto;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .signature-preview.locked {
+            cursor: default;
+            pointer-events: none;
+        }
+
+        @media (max-width: 768px) {
+            .signature-container {
+                flex-direction: column;
+            }
+
+            .qr-code-container {
+                width: 100%;
+                margin-top: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Assinar Documento</h4>
+            </div>
+            <div class="card-body">
+                <div class="pdf-container">
+                    <div class="pdf-wrapper">
+                        <canvas id="pdf-canvas"></canvas>
+                    </div>
+                </div>
+
+                {% if not ja_assinado %}
+                <div class="signature-section">
+                    <div class="instructions">
+                        <h5><i class="fas fa-info-circle"></i> Instruções</h5>
+                        <ol>
+                            <li>Desenhe sua assinatura no campo abaixo ou use seu celular escaneando o QR Code</li>
+                            <li>Clique em "Aplicar Assinatura" e arraste para posicionar no documento</li>
+                            <li>Quando estiver satisfeito, clique em "Finalizar e Baixar PDF"</li>
+                        </ol>
+                    </div>
+
+                    <div class="signature-container">
+                        <div class="signature-pad-container">
+                            <canvas id="signature-pad"></canvas>
+                            <div class="button-group">
+                                <button class="btn btn-secondary" id="btn-limpar">
+                                    <i class="fas fa-eraser"></i> Limpar
+                                </button>
+                                <button class="btn btn-primary" id="btn-aplicar">
+                                    <i class="fas fa-check"></i> Aplicar
+                                </button>
+                                <button class="btn btn-success" id="btn-finalizar">
+                                    <i class="fas fa-download"></i> Finalizar e Baixar
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="qr-code-container">
+                            <h6>Assinar pelo Celular</h6>
+                            <img src="/api/qrcode/{{ termo._id }}" alt="QR Code para assinatura mobile" class="img-fluid mb-2">
+                            <p class="small text-muted mb-0">Escaneie para assinar usando seu celular</p>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="download-section text-center mt-4">
+                    <div class="alert alert-success">
+                        <h4><i class="fas fa-check-circle"></i> Documento Assinado</h4>
+                        <p>Este documento já foi assinado. Você pode fazer o download da via assinada clicando no botão abaixo.</p>
+                    </div>
+                    <a href="/download-termo/{{ termo.arquivo_assinado }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-download"></i> Download do PDF Assinado
+                    </a>
+                </div>
+                {% endif %}
+
+                <div id="status-message" class="alert" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let pdfDoc = null;
+        let pageNum = 1;
+        let signaturePad = null;
+        let signaturePreview = null;
+        let isDragging = false;
+        let isFinalized = false;
+
+        // Inicializar o PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        function showMessage(message, type) {
+            const messageEl = document.getElementById('status-message');
+            messageEl.className = `alert alert-${type}`;
+            messageEl.textContent = message;
+            messageEl.style.display = 'block';
+            
+            if (type !== 'error') {
+                setTimeout(() => {
+                    messageEl.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        async function loadPDF() {
+            try {
+                const loadingTask = pdfjsLib.getDocument(`/api/termo/{{ termo._id }}?v=${Date.now()}`);
+                pdfDoc = await loadingTask.promise;
+                renderPage();
+            } catch (error) {
+                console.error('Erro ao carregar PDF:', error);
+                showMessage('Erro ao carregar o PDF', 'error');
+            }
+        }
+
+        async function renderPage() {
+            try {
+                const page = await pdfDoc.getPage(pageNum);
+                const viewport = page.getViewport({ scale: 1.5 });
+                
+                const canvas = document.getElementById('pdf-canvas');
+                const context = canvas.getContext('2d');
+                
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                
+                await page.render({
+                    canvasContext: context,
+                    viewport: viewport
+                }).promise;
+            } catch (error) {
+                console.error('Erro ao renderizar página:', error);
+                showMessage('Erro ao renderizar página', 'error');
+            }
+        }
+
+        function initializeSignaturePad() {
+            const canvas = document.getElementById('signature-pad');
+            if (!canvas) return; // Se o canvas não existir (documento já assinado), retorna
+
+            const ratio = Math.max(window.devicePixelRatio || 1, 1);
+            canvas.width = canvas.offsetWidth * ratio;
+            canvas.height = canvas.offsetHeight * ratio;
+            const ctx = canvas.getContext('2d');
+            ctx.scale(ratio, ratio);
+            
+            signaturePad = new SignaturePad(canvas, {
+                backgroundColor: 'rgb(255, 255, 255)'
+            });
+        }
+
+        function clearSignature() {
+            if (signaturePad) {
+                signaturePad.clear();
+            }
+            if (signaturePreview) {
+                signaturePreview.remove();
+                signaturePreview = null;
+            }
+        }
+
+        function applySignature() {
+            if (signaturePad.isEmpty()) {
+                showMessage('Por favor, faça sua assinatura antes de aplicar', 'warning');
+                return;
+            }
+
+            if (signaturePreview) {
+                signaturePreview.remove();
+            }
+
+            const signatureData = signaturePad.toDataURL();
+            const img = new Image();
+            img.src = signatureData;
+            
+            const previewDiv = document.createElement('div');
+            previewDiv.className = 'signature-preview';
+            previewDiv.style.position = 'absolute';
+            previewDiv.style.left = '50%';
+            previewDiv.style.top = '50%';
+            previewDiv.style.transform = 'translate(-50%, -50%)';
+            
+            img.style.width = '100%';
+            img.style.height = 'auto';
+            previewDiv.appendChild(img);
+            
+            document.querySelector('.pdf-wrapper').appendChild(previewDiv);
+            signaturePreview = previewDiv;
+            
+            makeDraggable(previewDiv);
+            showMessage('Arraste a assinatura para posicioná-la no documento', 'info');
+        }
+
+        function makeDraggable(element) {
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            element.onmousedown = dragMouseDown;
+
+            function dragMouseDown(e) {
+                e.preventDefault();
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                document.onmouseup = closeDragElement;
+                document.onmousemove = elementDrag;
+                isDragging = true;
+            }
+
+            function elementDrag(e) {
+                e.preventDefault();
+                pos1 = pos3 - e.clientX;
+                pos2 = pos4 - e.clientY;
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                
+                const container = document.querySelector('.pdf-wrapper');
+                const rect = container.getBoundingClientRect();
+                
+                const newTop = element.offsetTop - pos2;
+                const newLeft = element.offsetLeft - pos1;
+                
+                if (newLeft >= 0 && newLeft + element.offsetWidth <= container.offsetWidth) {
+                    element.style.left = newLeft + "px";
+                }
+                
+                if (newTop >= 0 && newTop + element.offsetHeight <= container.offsetHeight) {
+                    element.style.top = newTop + "px";
+                }
+            }
+
+            function closeDragElement() {
+                document.onmouseup = null;
+                document.onmousemove = null;
+                isDragging = false;
+            }
+        }
+
+        async function finalizeAndDownload() {
+            if (!signaturePreview) {
+                showMessage('Por favor, aplique sua assinatura antes de finalizar', 'warning');
+                return;
+            }
+
+            if (isDragging) {
+                showMessage('Por favor, termine de posicionar a assinatura antes de finalizar', 'warning');
+                return;
+            }
+
+            try {
+                const signatureRect = signaturePreview.getBoundingClientRect();
+                const pdfContainer = document.querySelector('.pdf-container');
+                const pdfCanvas = document.getElementById('pdf-canvas');
+                
+                // Dimensões padrão de um A4 em pontos (72 dpi)
+                const A4_WIDTH = 595.276; // 210mm em pontos
+                const A4_HEIGHT = 841.890; // 297mm em pontos
+
+                // Obter o tamanho atual do container do PDF
+                const containerRect = pdfCanvas.getBoundingClientRect();
+
+                // Calcular a escala entre o tamanho exibido e o tamanho real do A4
+                const scaleX = A4_WIDTH / containerRect.width;
+                const scaleY = A4_HEIGHT / containerRect.height;
+
+                // Calcular a posição relativa ao container do PDF
+                const relativeX = (signatureRect.left - containerRect.left) * scaleX;
+                const relativeY = (signatureRect.top - containerRect.top) * scaleY;
+
+                // Calcular as dimensões da assinatura mantendo a proporção
+                const signatureWidth = signatureRect.width * scaleX;
+                const signatureHeight = signatureRect.height * scaleY;
+
+                const position = {
+                    x: relativeX,
+                    y: relativeY,
+                    width: signatureWidth,
+                    height: signatureHeight,
+                    pageWidth: A4_WIDTH,
+                    pageHeight: A4_HEIGHT
+                };
+
+                const formData = new FormData();
+                formData.append('termo_id', '{{ termo._id }}');
+                formData.append('assinatura', signaturePad.toDataURL());
+                formData.append('posicao', JSON.stringify(position));
+
+                showMessage('Processando assinatura...', 'info');
+
+                const response = await fetch('/api/salvar-assinatura', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showMessage('Assinatura salva com sucesso!', 'success');
+                    
+                    // Iniciar o download do PDF
+                    const downloadUrl = `/download-termo/${result.arquivo_assinado}`;
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.style.display = 'none';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+
+                    // Notificar a página principal para atualizar o status
+                    if (window.opener && !window.opener.closed) {
+                        window.opener.atualizarStatus('{{ termo._id }}');
+                    }
+
+                    // Aguardar um breve momento para garantir que o download iniciou
+                    setTimeout(() => {
+                        // Recarregar a página
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    throw new Error(result.detail || 'Erro ao salvar assinatura');
+                }
+            } catch (error) {
+                console.error('Erro ao finalizar:', error);
+                showMessage(`Erro ao finalizar: ${error.message}`, 'error');
+            }
+        }
+
+        // Inicializar quando o documento estiver pronto
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                await loadPDF();
+                initializeSignaturePad();
+                
+                // Event Listeners
+                document.getElementById('btn-limpar')?.addEventListener('click', clearSignature);
+                document.getElementById('btn-aplicar')?.addEventListener('click', applySignature);
+                document.getElementById('btn-finalizar')?.addEventListener('click', finalizeAndDownload);
+                
+            } catch (error) {
+                console.error('Erro ao inicializar:', error);
+                showMessage('Erro ao inicializar a página', 'error');
+            }
+        });
+
+        // Ajustar tamanho do canvas quando a janela for redimensionada
+        window.addEventListener('resize', () => {
+            const canvas = document.getElementById('signature-pad');
+            canvas.width = canvas.offsetWidth;
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Novo Termo{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Novo Termo</h2>
+    
+    <form id="formNovoTermo" class="mt-4">
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="modelo" class="form-label">Modelo do Termo*</label>
+                <select class="form-select" id="modelo" name="modelo_id" required>
+                    <option value="">Selecione um modelo...</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label for="titulo_documento" class="form-label">Título do Documento*</label>
+                <input type="text" class="form-control" id="titulo_documento" name="titulo_documento" required>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="nome_colaborador" class="form-label">Nome do Colaborador*</label>
+                <input type="text" class="form-control" id="nome_colaborador" name="nome_colaborador" required>
+            </div>
+            <div class="col-md-6">
+                <label for="departamento" class="form-label">Departamento*</label>
+                <input type="text" class="form-control" id="departamento" name="departamento" required>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="cargo" class="form-label">Cargo*</label>
+                <input type="text" class="form-control" id="cargo" name="cargo" required>
+            </div>
+            <div class="col-md-6">
+                <label for="data_documento" class="form-label">Data do Documento*</label>
+                <input type="date" class="form-control" id="data_documento" name="data_documento" required>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="marca_equipamento" class="form-label">Marca do Equipamento*</label>
+                <input type="text" class="form-control" id="marca_equipamento" name="marca_equipamento" required>
+            </div>
+            <div class="col-md-6">
+                <label for="modelo_equipamento" class="form-label">Modelo do Equipamento*</label>
+                <input type="text" class="form-control" id="modelo_equipamento" name="modelo_equipamento" required>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="numero_tag" class="form-label">Número da TAG*</label>
+                <input type="text" class="form-control" id="numero_tag" name="numero_tag" required>
+            </div>
+            <div class="col-md-6">
+                <label for="numero_patrimonio" class="form-label">Número do Patrimônio*</label>
+                <input type="text" class="form-control" id="numero_patrimonio" name="numero_patrimonio" required>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <label for="caracteristicas" class="form-label">Características do Equipamento*</label>
+                <textarea class="form-control" id="caracteristicas" name="caracteristicas" rows="2" required></textarea>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <label for="interfaces" class="form-label">Interfaces*</label>
+                <textarea class="form-control" id="interfaces" name="interfaces" rows="2" required></textarea>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <label for="acessorios" class="form-label">Acessórios*</label>
+                <textarea class="form-control" id="acessorios" name="acessorios" rows="2" required></textarea>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col">
+                <button type="submit" class="btn btn-primary">Gerar Termo</button>
+                <button type="button" class="btn btn-secondary" onclick="limparFormulario()">Limpar</button>
+                <button type="button" class="btn btn-info" onclick="preencherExemplo(1)">Exemplo 1</button>
+                <button type="button" class="btn btn-info" onclick="preencherExemplo(2)">Exemplo 2</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="loader-container">
+    <div class="d-flex flex-column align-items-center">
+        <div class="loader"></div>
+        <div class="loader-message">Processando...</div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/novo-termo.js"></script>
+{% endblock %}
