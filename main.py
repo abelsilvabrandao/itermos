@@ -40,9 +40,10 @@ from typing import Dict, Any
 import json
 from reportlab.lib.utils import ImageReader
 import tempfile
-
+from dotenv import load_dotenv
 # PDF related imports
-
+# Carregar variáveis de ambiente
+load_dotenv()
 
 # Configuração do logging
 logging.basicConfig(level=logging.INFO)
@@ -64,8 +65,8 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 # Configurações
-MONGODB_URL = "mongodb://localhost:27017"
-DATABASE_NAME = "documentacao_ti"
+MONGODB_URL = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
+DATABASE_NAME = os.getenv("DATABASE_NAME", "documentacao_ti")
 
 # MongoDB setup
 client = None
