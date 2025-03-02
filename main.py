@@ -94,7 +94,15 @@ os.makedirs(TERMOS_ASSINADOS_FOLDER, exist_ok=True)
 async def get_database():
     try:
         logger.info(f"Tentando conectar ao MongoDB...")
-        client = AsyncIOMotorClient(MONGODB_URI, serverSelectionTimeoutMS=5000)
+        client = AsyncIOMotorClient(
+            MONGODB_URI,
+            serverSelectionTimeoutMS=5000,
+            ssl=True,
+            ssl_cert_reqs='CERT_NONE',
+            retryWrites=True,
+            connectTimeoutMS=30000,
+            socketTimeoutMS=30000
+        )
         await client.admin.command('ping')
         logger.info("Conexão com MongoDB estabelecida com sucesso")
         db = client[DATABASE_NAME]
