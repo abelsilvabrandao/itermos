@@ -96,12 +96,9 @@ async def get_database():
         logger.info(f"Tentando conectar ao MongoDB...")
         client = AsyncIOMotorClient(
             MONGODB_URI,
-            serverSelectionTimeoutMS=5000,
-            ssl=True,
-            ssl_cert_reqs='CERT_NONE',
-            retryWrites=True,
-            connectTimeoutMS=30000,
-            socketTimeoutMS=30000
+            serverSelectionTimeoutMS=30000,
+            tls=True,
+            tlsAllowInvalidCertificates=True
         )
         await client.admin.command('ping')
         logger.info("Conexão com MongoDB estabelecida com sucesso")
