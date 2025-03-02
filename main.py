@@ -65,7 +65,11 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 # Configurações do MongoDB
-MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb://localhost:27017/')
+MONGODB_URI = os.getenv('MONGODB_URI')
+if not MONGODB_URI:
+    logger.warning("MONGODB_URI não encontrada nas variáveis de ambiente. Usando conexão local.")
+    MONGODB_URI = 'mongodb://localhost:27017/'
+
 DATABASE_NAME = 'itermos'
 
 # MongoDB setup
@@ -89,13 +93,15 @@ os.makedirs(TERMOS_ASSINADOS_FOLDER, exist_ok=True)
 # Função para conectar ao MongoDB
 async def get_database():
     try:
+        logger.info(f"Tentando conectar ao MongoDB...")
         client = AsyncIOMotorClient(MONGODB_URI, serverSelectionTimeoutMS=5000)
         await client.admin.command('ping')
         logger.info("Conexão com MongoDB estabelecida com sucesso")
         db = client[DATABASE_NAME]
         return db
     except Exception as e:
-        logger.error(f"Erro ao conectar com MongoDB: {str(e)}\n{traceback.format_exc()}")
+        logger.error(f"Erro ao conectar com MongoDB: {str(e)}")
+        logger.error(f"URI de conexão utilizada (sem senha): {MONGODB_URI.split(':')[0]}")
         return None
 
 # Função auxiliar para converter ObjectId para string
@@ -130,25 +136,34 @@ def gerar_qr_code(data, output_file):
 async def startup_event():
     try:
         logger.info("=== Iniciando Aplicação ===")
+        global db  # Torna a variável db global
         db = await get_database()
         
-        # Criar índices e coleções necessárias
-        colecoes = await db.list_collection_names()
-        
-        # Coleção de modelos
-        if "modelos" not in colecoes:
-            await db.create_collection("modelos")
-            await db.modelos.create_index("nome", unique=True)
-            logger.info("Coleção 'modelos' criada com sucesso!")
-        
-        # Coleção de termos
-        if "termos" not in colecoes:
-            await db.create_collection("termos")
-            await db.termos.create_index("token", unique=True)
-            logger.info("Coleção 'termos' criada com sucesso!")
+        if db is None:
+            logger.error("Falha crítica: Não foi possível conectar ao banco de dados")
+            raise Exception("Falha na conexão com o banco de dados")
             
-        logger.info("Banco de dados inicializado com sucesso!")
-        
+        # Criar índices e coleções necessárias
+        try:
+            colecoes = await db.list_collection_names()
+            
+            # Coleção de modelos
+            if "modelos" not in colecoes:
+                await db.create_collection("modelos")
+                await db.modelos.create_index("nome", unique=True)
+                logger.info("Coleção 'modelos' criada com sucesso!")
+            
+            # Coleção de termos
+            if "termos" not in colecoes:
+                await db.create_collection("termos")
+                await db.termos.create_index("token", unique=True)
+                logger.info("Coleção 'termos' criada com sucesso!")
+                
+            logger.info("Banco de dados inicializado com sucesso!")
+        except Exception as e:
+            logger.error(f"Erro ao inicializar coleções: {str(e)}")
+            raise
+            
         routes = [
             {"path": route.path, "name": route.name, "methods": route.methods}
             for route in app.routes
