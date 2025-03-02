@@ -64,9 +64,9 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# Configurações
-MONGODB_URL = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
-DATABASE_NAME = os.getenv("DATABASE_NAME", "documentacao_ti")
+# Configurações do MongoDB
+MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb://localhost:27017/')
+DATABASE_NAME = 'itermos'
 
 # MongoDB setup
 client = None
@@ -89,7 +89,7 @@ os.makedirs(TERMOS_ASSINADOS_FOLDER, exist_ok=True)
 # Função para conectar ao MongoDB
 async def get_database():
     try:
-        client = AsyncIOMotorClient(MONGODB_URL, serverSelectionTimeoutMS=5000)
+        client = AsyncIOMotorClient(MONGODB_URI, serverSelectionTimeoutMS=5000)
         await client.admin.command('ping')
         logger.info("Conexão com MongoDB estabelecida com sucesso")
         db = client[DATABASE_NAME]
