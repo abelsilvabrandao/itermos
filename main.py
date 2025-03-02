@@ -41,6 +41,8 @@ import json
 from reportlab.lib.utils import ImageReader
 import tempfile
 from dotenv import load_dotenv
+import certifi
+
 # PDF related imports
 # Carregar variáveis de ambiente
 load_dotenv()
@@ -94,19 +96,24 @@ os.makedirs(TERMOS_ASSINADOS_FOLDER, exist_ok=True)
 async def get_database():
     try:
         logger.info(f"Tentando conectar ao MongoDB...")
+        # Usando certifi para certificados SSL
         client = AsyncIOMotorClient(
             MONGODB_URI,
-            serverSelectionTimeoutMS=30000,
-            tls=True,
-            tlsAllowInvalidCertificates=True
+            tlsCAFile=certifi.where(),
+            serverSelectionTimeoutMS=5000,
+            connectTimeoutMS=10000,
+            socketTimeoutMS=10000,
+            maxPoolSize=50,
+            retryWrites=True
         )
+        # Teste a conexão
         await client.admin.command('ping')
         logger.info("Conexão com MongoDB estabelecida com sucesso")
-        db = client[DATABASE_NAME]
+        db = client['itermos']
         return db
     except Exception as e:
         logger.error(f"Erro ao conectar com MongoDB: {str(e)}")
-        logger.error(f"URI de conexão utilizada (sem senha): {MONGODB_URI.split(':')[0]}")
+        logger.error(f"URI de conexão utilizada (sem senha): {MONGODB_URI.split(':')[0] if MONGODB_URI else 'Nenhuma URI configurada'}")
         return None
 
 # Função auxiliar para converter ObjectId para string
