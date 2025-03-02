@@ -96,15 +96,13 @@ os.makedirs(TERMOS_ASSINADOS_FOLDER, exist_ok=True)
 async def get_database():
     try:
         logger.info(f"Tentando conectar ao MongoDB...")
-        # Usando certifi para certificados SSL
+        # Configuração simplificada
         client = AsyncIOMotorClient(
             MONGODB_URI,
-            tlsCAFile=certifi.where(),
             serverSelectionTimeoutMS=5000,
-            connectTimeoutMS=10000,
-            socketTimeoutMS=10000,
-            maxPoolSize=50,
-            retryWrites=True
+            tls=True,
+            tlsAllowInvalidCertificates=True,
+            directConnection=True
         )
         # Teste a conexão
         await client.admin.command('ping')
