@@ -23,7 +23,7 @@ import sys
 import shutil
 import qrcode
 from unidecode import unidecode
-import PyPDF2
+import pypdf
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -1584,7 +1584,7 @@ async def salvar_assinatura(request: Request):
         temp_sig.close()
 
         # Abrir o PDF original
-        pdf_original = PyPDF2.PdfReader(BytesIO(termo['arquivo']))
+        pdf_original = pypdf.PdfReader(BytesIO(termo['arquivo']))
         primeira_pagina = pdf_original.pages[0]
 
         # Obter dimensões da página
@@ -1604,8 +1604,8 @@ async def salvar_assinatura(request: Request):
         packet.seek(0)
 
         # Criar o PDF final
-        output = PyPDF2.PdfWriter()
-        watermark = PyPDF2.PdfReader(packet)
+        output = pypdf.PdfWriter()
+        watermark = pypdf.PdfReader(packet)
 
         # Adicionar a primeira página e mesclar com a assinatura
         primeira_pagina.merge_page(watermark.pages[0])
